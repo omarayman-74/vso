@@ -134,26 +134,31 @@ class ChatService:
         cached_response = response_cache.get(message, cache_language)
         
         if cached_response:
-            # Return cached response immediately
-            return cached_response
+            # Return cached response immediately with timing metadata
+            cached_result = dict(cached_response)
+            cached_result["response_time_ms"] = 0.0
+            cached_result["cache_hit"] = True
+            return cached_result
         
-        # 🛡️ SECURITY CHECK FIRST
-        guard_start_time = time.time()
-        security_check = guard_agent(message)
-        guard_execution_time = time.time() - guard_start_time
-        
-        if not security_check.get("safe", True):
-            refusal_msg = "I cannot process this request due to safety guidelines."
-            if "reason" in security_check:
-                 safe_print(f"WARNING: Security Violation Blocked: {security_check['reason']}")
+        # 🛡️ SECURITY CHECK (optional for speed)
+        if settings.enable_safety_guard:
+            guard_start_time = time.time()
+            security_check = guard_agent(message)
+            guard_execution_time = time.time() - guard_start_time
             
-            # Log violation with execution time
-            log_full_action(message, refusal_msg, session_memory, agent_name="Guard Agent", execution_time=guard_execution_time)
-            
-            return {
-                "response": refusal_msg,
-                "sql_logs": []
-            }
+            if not security_check.get("safe", True):
+                refusal_msg = "I cannot process this request due to safety guidelines."
+                if "reason" in security_check:
+                     safe_print(f"WARNING: Security Violation Blocked: {security_check['reason']}")
+                
+                # Log violation with execution time (optional for speed)
+                if settings.enable_file_logging:
+                    log_full_action(message, refusal_msg, session_memory, agent_name="Guard Agent", execution_time=guard_execution_time)
+                
+                return {
+                    "response": refusal_msg,
+                    "sql_logs": []
+                }
         
         # Reset new_results check for this turn
         session_memory.new_results_fetched = False
@@ -174,14 +179,16 @@ class ChatService:
             else:
                  language_result = language_result_json
             
-            # DEBUG PRINT
-            safe_print(f"[DEBUG] Language Raw JSON: {str(language_result)[:100]}")
+            # DEBUG PRINT (optional for speed)
+            if settings.enable_debug_logging:
+                safe_print(f"[DEBUG] Language Raw JSON: {str(language_result)[:100]}")
             
             detected_lang = language_result.get("language", "en")
             session_memory.detected_language = detected_lang
             session_memory.language_confidence = language_result.get("confidence", "medium")
             
-            safe_print(f"Language detected: {detected_lang}")
+            if settings.enable_debug_logging:
+                safe_print(f"Language detected: {detected_lang}")
             
         except Exception as e:
             safe_print(f"Language detection error: {e}, defaulting to English")
@@ -222,9 +229,8 @@ Classify this query into EXACTLY ONE of these categories:
 
 1. **project_info** - User wants INFORMATION ABOUT what projects exist/are available
    - Asking WHICH/WHAT projects can be purchased
-   - Wants to LEARN about project options
-   - NOT searching for specific units with criteria
-   Example: "What projects are available?", "Tell me about X project", "ايه المشاريع المتاحة"
+    - Wants to LEARN about project options
+    Example: "What projects are available?", "Tell me about X project", "ايه المشاريع المتاحة"
 
 2. **unit_search** - User wants to SEARCH/FIND specific units with filtering criteria
    - Has requirements (rooms, price, area, location)
@@ -237,9 +243,9 @@ Think about the USER'S GOAL, not specific words used.
 
 Respond with ONLY valid JSON:
 {{
-  "intent": "project_info" or "unit_search" or "other",
-  "confidence": 0.0-1.0,
-  "reasoning": "brief explanation"
+    "intent": "project_info" or "unit_search" or "other",
+    "confidence": 0.0-1.0,
+    "reasoning": "brief explanation"
 }}"""
 
             try:
@@ -340,7 +346,8 @@ Respond with ONLY valid JSON:
         
         # Prepare chat history for agent
         chat_history = []
-        for msg in session_memory.chat_history[-10:]:  # Last 10 messages
+        max_history = max(0, settings.max_chat_history_messages)
+        for msg in session_memory.chat_history[-max_history:]:  # Configurable history
             if msg["role"] == "user":
                 chat_history.append(("human", msg["content"]))
             else:
@@ -790,9 +797,10 @@ Then respond to the original user query."""
             # Log to file (Legacy)
             # self._log_interaction(message, response_text, session_memory)
             
-            # ✅ FINAL LOGGING: Capture everything including carousel injection
+            # ✅ FINAL LOGGING: Capture everything including carousel injection (optional for speed)
             total_execution_time = time.time() - start_time
-            log_full_action(message, response_text, session_memory, agent_name=actual_agent, execution_time=total_execution_time)
+            if settings.enable_file_logging:
+                log_full_action(message, response_text, session_memory, agent_name=actual_agent, execution_time=total_execution_time)
             
             # Reset agent flags for next turn (AFTER logging)
             session_memory.sql_agent_used = False
@@ -806,7 +814,9 @@ Then respond to the original user query."""
             result = {
                 "response": response_text,
                 "detected_language": detected_lang,
-                "sql_logs": sql_logs
+                "sql_logs": sql_logs,
+                "response_time_ms": round(total_execution_time * 1000, 2),
+                "cache_hit": False
             }
             
             # Store in cache

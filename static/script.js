@@ -86,8 +86,14 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator(typingId);
 
             if (response.ok) {
-                // Add assistant response
-                addMessage(data.response, 'assistant');
+                // Add assistant response (delay cache hits 0.5s for natural feel)
+                if (data.cache_hit) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                addMessage(data.response, 'assistant', {
+                    response_time_ms: data.cache_hit ? 500 : data.response_time_ms,
+                    cache_hit: data.cache_hit
+                });
             } else {
                 const errorMsg = `⚠️ **System Error**: ${data.detail || 'Unknown error'}`;
                 addMessage(errorMsg, 'assistant');
@@ -161,8 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator(typingId);
 
             if (response.ok) {
-                // Add assistant response
-                addMessage(data.response, 'assistant');
+                // Add assistant response (delay cache hits 0.5s for natural feel)
+                if (data.cache_hit) {
+                    await new Promise(r => setTimeout(r, 500));
+                }
+                addMessage(data.response, 'assistant', {
+                    response_time_ms: data.cache_hit ? 500 : data.response_time_ms,
+                    cache_hit: data.cache_hit
+                });
             } else {
                 const errorMsg = `⚠️ **System Error**: ${data.detail || 'Unknown error'}`;
                 addMessage(errorMsg, 'assistant');
@@ -180,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.processMessage = processMessage;
 
-    function addMessage(content, role) {
+    function addMessage(content, role, meta = null) {
         window.addMessage = addMessage;
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
@@ -216,6 +228,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Then render text content
             contentHTML += parseMarkdown(cleanText);
             contentDiv.innerHTML = contentHTML;
+
+            if (meta && typeof meta.response_time_ms !== 'undefined') {
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'response-meta';
+                const timeValue = Number(meta.response_time_ms) / 1000;
+                const timeText = Number.isFinite(timeValue) ? `${timeValue.toFixed(2)}s` : 'n/a';
+                const cacheText = meta.cache_hit ? 'cached' : '';
+                metaDiv.textContent = cacheText ? `⏱ ${timeText} · ${cacheText}` : `⏱ ${timeText}`;
+                contentDiv.appendChild(metaDiv);
+            }
+
             messageDiv.appendChild(contentDiv);
 
             // Render action buttons (Property Link, Video Link, Payment Plan Request)

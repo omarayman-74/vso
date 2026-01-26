@@ -190,6 +190,13 @@ body {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.response-meta {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding-left: 0.25rem;
+}
+
 /* Assistant Markdown Styling */
 .message-content p {
     margin-bottom: 0.8em;

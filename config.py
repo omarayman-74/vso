@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
     log_file: str = "chat_log.txt"
+    enable_file_logging: bool = False  # Disable per-request file logging for speed
+    enable_debug_logging: bool = False  # Disable verbose debug prints for speed
+    enable_rag_debug: bool = False  # Disable RAG debug output
     
     # Application
     app_title: str = "Eshtri Aqar Chatbot"
@@ -42,8 +45,11 @@ class Settings(BaseSettings):
     # Performance Optimization Flags
     enable_intent_classifier: bool = False  # Disabled for speed
     enable_cross_validation: bool = False  # Disabled for speed
-    rag_chunk_count: int = 5  # Reduced from 10 for speed
-    preprocessing_min_words: int = 10  # Skip preprocessing for queries < 10 words
+    rag_chunk_count: int = 3  # Reduced further for speed
+    preprocessing_min_words: int = 50  # Skip preprocessing for most queries
+    max_chat_history_messages: int = 2  # Minimal context for speed
+    use_llm_language_detection: bool = False  # Use heuristics only for speed
+    enable_safety_guard: bool = False  # Skip safety guard LLM call for speed
     
     @property
     def db_config(self) -> dict:

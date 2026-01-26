@@ -17,6 +17,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 import os
+import sys
+import codecs
+
+# Fix for Windows console encoding
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except AttributeError:
+        # Fallback for older python versions if reconfigure not available
+        sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+        sys.stderr = codecs.getwriter("utf-8")(sys.stderr.detach())
 
 from config import settings
 from services.chat_service import chat_service
@@ -50,6 +62,8 @@ class ChatResponse(BaseModel):
     response: str
     detected_language: str = "en"
     sql_logs: list = []
+    response_time_ms: float = 0.0
+    cache_hit: bool = False
 
 
 # Routes
@@ -87,7 +101,9 @@ async def chat(request: ChatRequest):
         return ChatResponse(
             response=result["response"],
             detected_language=result.get("detected_language", "en"),
-            sql_logs=result.get("sql_logs", [])
+            sql_logs=result.get("sql_logs", []),
+            response_time_ms=result.get("response_time_ms", 0.0),
+            cache_hit=result.get("cache_hit", False)
         )
         
     except Exception as e:

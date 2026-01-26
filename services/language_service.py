@@ -96,6 +96,45 @@ def detect_language_logic(text: str) -> str:
             "arabic_ratio": 0.0
         })
 
+    # 🚀 PERFORMANCE: Skip LLM language detection when disabled
+    if not settings.use_llm_language_detection:
+        # Count Arabic characters
+        arabic_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
+        alpha_chars = sum(1 for c in text if c.isalpha() or '\u0600' <= c <= '\u06FF')
+        arabic_ratio = arabic_chars / alpha_chars if alpha_chars > 0 else 0
+
+        franco_patterns = [
+            'meen', 'ezay', 'ezzay', '3ayez', '2ana', '7aga', 'sha2a',
+            '2od', '7amam', 'ghorfa', 'fe ', ' el-', 'bey3', 'bey2',
+            'kebira', 'so3ayara', 'ta2riban', '3ala', 'm3ad', 'yalla'
+        ]
+        franco_matches = [p for p in franco_patterns if p in text_lower]
+
+        if arabic_ratio > 0.5:
+            return json.dumps({
+                "language": "ar",
+                "confidence": 0.9,
+                "reasoning": f"Fast heuristic: High Arabic ratio ({arabic_ratio:.1%})",
+                "detected_patterns": [],
+                "arabic_ratio": arabic_ratio
+            })
+        if franco_matches:
+            return json.dumps({
+                "language": "franco",
+                "confidence": 0.85,
+                "reasoning": f"Fast heuristic: Franco patterns: {franco_matches}",
+                "detected_patterns": franco_matches,
+                "arabic_ratio": arabic_ratio
+            })
+
+        return json.dumps({
+            "language": "en",
+            "confidence": 0.6,
+            "reasoning": "Fast heuristic: Default to English",
+            "detected_patterns": [],
+            "arabic_ratio": arabic_ratio
+        })
+
 
     prompt = f"""You are an expert language detection system specialized in real estate queries.
 

@@ -404,32 +404,36 @@ Your goal is to ensure consistency by fixing ALL spelling and grammar mistakes.
             return "RAG Error: Vector database not initialized"
         
         try:
+            debug_enabled = settings.enable_rag_debug
             # PREPROCESSING LAYER - Automatically clean and improve query
             preprocessing_result = self._preprocess_query(query, language)
             preprocessed_query = preprocessing_result['preprocessed']
             
             # Debug logging (Windows console safe for Arabic/Unicode)
-            print(f"\n{'='*80}")
+            if debug_enabled:
+                print(f"\n{'='*80}")
             
             # Safe print for Arabic/Unicode queries
-            try:
-                print(f"[RAG DEBUG] Original query: {query[:80]}..." if len(query) > 80 else f"[RAG DEBUG] Original query: {query}")
-            except UnicodeEncodeError:
-                print(f"[RAG DEBUG] Original query: [Unicode query - {len(query)} chars]")
+            if debug_enabled:
+                try:
+                    print(f"[RAG DEBUG] Original query: {query[:80]}..." if len(query) > 80 else f"[RAG DEBUG] Original query: {query}")
+                except UnicodeEncodeError:
+                    print(f"[RAG DEBUG] Original query: [Unicode query - {len(query)} chars]")
             
             # Show preprocessing if changes were made
-            if preprocessed_query != query:
-                try:
-                    safe_print(f"[RAG DEBUG] Preprocessed to: {preprocessed_query[:80]}..." if len(preprocessed_query) > 80 else f"[RAG DEBUG] Preprocessed to: {preprocessed_query}")
-                except UnicodeEncodeError:
-                    safe_print(f"[RAG DEBUG] Preprocessed to: [Unicode query - {len(preprocessed_query)} chars]")
-                safe_print(f"[RAG DEBUG] Changes: {', '.join(preprocessing_result.get('changes_made', []))}")
-            else:
-                safe_print(f"[RAG DEBUG] No preprocessing needed")
-            
-            print(f"[RAG DEBUG] Query length: {len(preprocessed_query)} chars")
-            print(f"[RAG DEBUG] Language: {language}")
-            print(f"[RAG DEBUG] Embedding model: intfloat/multilingual-e5-large")
+            if debug_enabled:
+                if preprocessed_query != query:
+                    try:
+                        safe_print(f"[RAG DEBUG] Preprocessed to: {preprocessed_query[:80]}..." if len(preprocessed_query) > 80 else f"[RAG DEBUG] Preprocessed to: {preprocessed_query}")
+                    except UnicodeEncodeError:
+                        safe_print(f"[RAG DEBUG] Preprocessed to: [Unicode query - {len(preprocessed_query)} chars]")
+                    safe_print(f"[RAG DEBUG] Changes: {', '.join(preprocessing_result.get('changes_made', []))}")
+                else:
+                    safe_print(f"[RAG DEBUG] No preprocessing needed")
+                
+                print(f"[RAG DEBUG] Query length: {len(preprocessed_query)} chars")
+                print(f"[RAG DEBUG] Language: {language}")
+                print(f"[RAG DEBUG] Embedding model: {settings.embedding_model}")
             
             # Use MMR (Maximal Marginal Relevance) for diversified retrieval
             # This helps ensure we get chunks from different sections, not just most similar
@@ -445,32 +449,37 @@ Your goal is to ensure consistency by fixing ALL spelling and grammar mistakes.
                 # MMR doesn't return scores, so we'll use placeholder scores
                 docs = [(doc, 0.0) for doc in docs]
             except Exception as mmr_error:
-                print(f"[RAG DEBUG] MMR failed ({mmr_error}), falling back to similarity search")
+                if debug_enabled:
+                    print(f"[RAG DEBUG] MMR failed ({mmr_error}), falling back to similarity search")
                 # Fallback to regular similarity search if MMR not supported
                 docs = self.vectordb.similarity_search_with_score(preprocessed_query, k=k)
             
-            print(f"[RAG DEBUG] Retrieved {len(docs)} documents")
+            if debug_enabled:
+                print(f"[RAG DEBUG] Retrieved {len(docs)} documents")
             
             # Show top 3 results with scores for debugging (UTF-8 safe)
-            for i, (doc, score) in enumerate(docs[:3]):
-                preview = doc.page_content[:100].replace('\n', ' ')
-                print(f"[RAG DEBUG] Doc {i+1} - Score: {score:.4f}")
-                print(f"[RAG DEBUG]   Source: {doc.metadata.get('source_file', 'unknown')}")
-                print(f"[RAG DEBUG]   Preview length: {len(doc.page_content)} chars")
+            if debug_enabled:
+                for i, (doc, score) in enumerate(docs[:3]):
+                    preview = doc.page_content[:100].replace('\n', ' ')
+                    print(f"[RAG DEBUG] Doc {i+1} - Score: {score:.4f}")
+                    print(f"[RAG DEBUG]   Source: {doc.metadata.get('source_file', 'unknown')}")
+                    print(f"[RAG DEBUG]   Preview length: {len(doc.page_content)} chars")
             
             # Format results
             final_docs = [doc for doc, score in docs]
             final_text = "\n\n".join([f"Chunk {i+1}:\n{d.page_content}" for i, d in enumerate(final_docs)])
             
-            print(f"[RAG DEBUG] Total text returned: {len(final_text)} chars")
-            print(f"{'='*80}\n")
+            if debug_enabled:
+                print(f"[RAG DEBUG] Total text returned: {len(final_text)} chars")
+                print(f"{'='*80}\n")
             
             return final_text
             
         except Exception as e:
-            print(f"[RAG DEBUG] ERROR: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            if settings.enable_rag_debug:
+                print(f"[RAG DEBUG] ERROR: {str(e)}")
+                import traceback
+                traceback.print_exc()
             return f"RAG Error: {str(e)}"
 
 

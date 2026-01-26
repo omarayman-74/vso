@@ -1,0 +1,17 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-dotenv==1.0.0
+pydantic-settings==2.1.0
+langchain==0.1.14
+langchain-core
+langchain-openai==0.0.8
+langchain-community
+openai
+mysql-connector-python
+sqlalchemy
+chromadb
+sentence-transformers
+pypdf
+huggingface_hub
+pytz
+pysqlite3-binary

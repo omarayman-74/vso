@@ -1,0 +1,26 @@
+
+================================================================================
+PAYMENT PLAN DEBUG LOG - 2026-01-08 12:30:25.927190
+Unit ID: 1
+================================================================================
+
+📋 Tables to search: bi_unit, unit_details, unit_search_engine, unit_search_engine2, unit_search_sorting, unit_sorting
+
+✓ Table 'bi_unit' has unit_id column (15 total columns)
+✓ Table 'unit_details' has unit_id column (59 total columns)
+✓ Table 'unit_search_engine' has unit_id column (75 total columns)
+✓ Table 'unit_search_engine2' has unit_id column (64 total columns)
+✓ Table 'unit_search_sorting' has unit_id column (73 total columns)
+✓ Table 'unit_sorting' has unit_id column (2 total columns)
+
+📊 Found 6 tables with unit_id column
+
+✗ No data in 'bi_unit' for unit_id 1
+✗ No data in 'unit_details' for unit_id 1
+✗ No data in 'unit_search_engine' for unit_id 1
+✗ No data in 'unit_search_engine2' for unit_id 1
+✗ No data in 'unit_search_sorting' for unit_id 1
+✗ No data in 'unit_sorting' for unit_id 1
+
+❌ NO DATA FOUND for unit_id 1
+   Searched 6 tables

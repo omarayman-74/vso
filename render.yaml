@@ -2,22 +2,25 @@ services:
   - type: web
     name: eshtri-aqar-chatbot
     env: python
+    region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.0
       - key: OPENAI_API_KEY
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
         sync: false
       - key: DB_HOST
         sync: false
       - key: DB_PORT
         value: 31306
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
       - key: DB_NAME
         value: eshtri
-      - key: RENDER
-        value: true
+      - key: RAG_DB_PATH
+        value: ./rag_db
+      - key: LOG_LEVEL
+        value: INFO

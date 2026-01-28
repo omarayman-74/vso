@@ -33,7 +33,11 @@ def _get_llm():
     if _llm_instance is None:
         from langchain_openai import ChatOpenAI
         os.environ["OPENAI_API_KEY"] = settings.openai_api_key
-        _llm_instance = ChatOpenAI(model=settings.llm_model, temperature=settings.llm_temperature)
+        _llm_instance = ChatOpenAI(
+            model=settings.llm_model, 
+            temperature=settings.llm_temperature,
+            request_timeout=30  # 30 second timeout to prevent hanging
+        )
     return _llm_instance
 
 
